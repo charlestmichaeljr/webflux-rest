@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.reactivestreams.Publisher;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
@@ -15,6 +16,7 @@ import sun.net.www.http.HttpCapture;
 
 import java.net.URL;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 
 public class CategoryControllerTest {
@@ -58,5 +60,37 @@ public class CategoryControllerTest {
                 .exchange()
                 .expectBody(Category.class);
 
+    }
+
+    @Test
+    public void testCreateCategory() throws Exception {
+
+        BDDMockito.given(categoryRepository.saveAll(any(Publisher.class)))
+                .willReturn(Flux.just(Category.builder().build()));
+
+        Mono<Category> categoryMono = Mono.just(Category.builder().description("stuff").build());
+
+        webTestClient.post()
+                .uri(CATEGORIES_URL)
+                .body(categoryMono,Category.class)
+                .exchange()
+                .expectStatus()
+                .isCreated();
+
+    }
+
+    @Test
+    public void testUpdateCategory() throws Exception {
+        BDDMockito.given(categoryRepository.save(any(Category.class)))
+                .willReturn(Mono.just(Category.builder().build()));
+
+        Mono<Category> categoryMono = Mono.just(Category.builder().description("other stuff").build());
+
+        webTestClient.put()
+                .uri(CATEGORIES_URL + "/1")
+                .body(categoryMono,Category.class)
+                .exchange()
+                .expectStatus()
+                .isOk();
     }
 }
